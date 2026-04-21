@@ -218,10 +218,14 @@ static napi_value HandleSend(napi_env env, napi_callback_info info) {
 
   struct iovec iov = { .iov_base = data, .iov_len = len };
   ssize_t sent = sctp_sendv(h->fd, &iov, 1,
-    (struct sockaddr *)&addr, addr_len,
+    (struct sockaddr *)&addr, 1,
     &spa, sizeof(spa), SCTP_SENDV_SPA, 0);
 
-  if (sent < 0) THROW_ERRNO(env);
+  if (sent < 0) {
+    int err = errno;
+    napi_throw_error(env, NULL, strerror(err));
+    return NULL;
+  }
 
   napi_value result;
   NAPI_CALL(napi_create_int32(env, (int32_t)sent, &result));
